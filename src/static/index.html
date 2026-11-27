@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RainVisionAI — Real-Time Video Deraining &amp; Metrics</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #131a2e;
+      --panel-2: #19223c;
+      --border: #263252;
+      --text: #e8eefc;
+      --muted: #93a3c7;
+      --accent: #4f8cff;
+      --accent-hover: #6ba0ff;
+      --success: #2dd4bf;
+      --warn: #f59e0b;
+      --danger: #f87171;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at top right, #162244 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 28px 18px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      background: rgba(25, 34, 60, 0.45);
+      position: relative;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(79, 140, 255, 0.1);
+    }
+    .dropzone.has-file {
+      border-style: solid;
+      border-color: var(--success);
+      background: rgba(45, 212, 191, 0.06);
+    }
+    .dropzone input[type="file"] {
+      display: none;
+    }
+    .dropzone .icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .dropzone .title {
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+    .dropzone .sub {
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+    .file-badge {
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+    }
+    .clear-btn {
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-weight: 700;
+      padding: 0 4px;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+    label.field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+    select, input[type="number"] {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    select:focus, input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+    .toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 14px;
+      align-items: center;
+    }
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 11px 22px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #233054;
+    }
+    .progress-wrap { display: none; }
+    .progress-wrap.active { display: block; }
+    .bar-bg {
+      width: 100%;
+      height: 10px;
+      background: var(--panel-2);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 10px 0 8px;
+    }
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      transition: width 0.25s ease;
+    }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .error-box {
+      display: none;
+      background: rgba(248, 113, 113, 0.12);
+      border: 1px solid var(--danger);
+      color: #fecaca;
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+    .error-box.active { display: block; }
+    .results { display: none; }
+    .results.active { display: block; }
+    .video-box {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .video-box h3 {
+      margin: 0 0 8px;
+      font-size: 0.95rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    video {
+      width: 100%;
+      border-radius: 8px;
+      background: #000;
+      max-height: 380px;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .metric-card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .metric-card .m-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .metric-card .m-val {
+      font-size: 1.38rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .metric-card .m-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .gain-pos { color: var(--success); font-weight: 600; }
+    .chart-wrap {
+      margin-top: 18px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .chart-wrap h3 {
+      margin: 0 0 10px;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    svg.chart {
+      width: 100%;
+      height: 180px;
+      display: block;
+    }
+    .note {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1>RainVisionAI</h1>
+        <p>Real-Time Temporal Video Deraining &amp; Objective Evaluation Metrics</p>
+      </div>
+      <div class="pill" id="serverStatus">
+        <span class="dot"></span>
+        <span>Checking backend...</span>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="grid-2">
+        <div class="dropzone" id="rainyZone">
+          <input type="file" id="rainyInput" accept="video/*" />
+          <span class="icon">🌧️</span>
+          <div class="title" id="rainyTitle">Drag &amp; drop rainy video here</div>
+          <div class="sub">or click to browse (.mp4, .avi, .mov, .mkv)</div>
+          <div id="rainyBadge"></div>
+        </div>
+
+        <div class="dropzone" id="cleanZone">
+          <input type="file" id="cleanInput" accept="video/*" />
+          <span class="icon">🎯</span>
+          <div class="title">Optional: Clean Ground-Truth Video</div>
+          <div class="sub">Drop an aligned clean video to compute PSNR &amp; SSIM (Paired mode)</div>
+          <div id="cleanBadge"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <label class="field">
+          Evaluation Mode
+          <select id="modeSelect">
+            <option value="auto">Auto (No-Reference / Paired)</option>
+            <option value="no-reference">No-Reference (Real Rain)</option>
+            <option value="paired">Paired (Rainy + Clean GT)</option>
+            <option value="synthetic">Synthetic Rain Benchmark (Upload Clean)</option>
+          </select>
+        </label>
+
+        <label class="field">
+          Quality Preset
+          <select id="qualitySelect">
+            <option value="fast">Fast (~2x FPS, Farneback)</option>
+            <option value="balanced" selected>Balanced (DIS + Streak Filter)</option>
+            <option value="high">High (9-frame Buffer, Best PSNR)</option>
+          </select>
+        </label>
+
+        <label class="field">
+          Processing Width (px)
+          <select id="widthSelect">
+            <option value="320">320 px (Fastest)</option>
+            <option value="480" selected>480 px (Default)</option>
+            <option value="640">640 px</option>
+            <option value="720">720 px</option>
+          </select>
+        </label>
+
+        <label class="field">
+          Max Frames (0 = All)
+          <input type="number" id="maxFramesInput" value="0" min="0" step="30" />
+        </label>
+
+        <label class="field" id="rainDensityWrap" style="display:none;">
+          Synthetic Rain Density
+          <input type="number" id="rainDensityInput" value="0.002" min="0.0005" max="0.01" step="0.0005" />
+        </label>
+      </div>
+
+      <div class="toggles">
+        <label class="toggle">
+          <input type="checkbox" id="noFlowCheck" />
+          Disable Optical Flow (faster on static camera)
+        </label>
+        <label class="toggle" id="detectToggleWrap">
+          <input type="checkbox" id="detectCheck" />
+          Run YOLOv8n Object Detection
+        </label>
+        <select id="modelSelect" style="display:none;"></select>
+        <span class="note" id="noModelHint" style="margin:0; display:none;">
+          (No <code>.onnx</code> model found in <code>models/</code> — run <code>export_and_quantize.py</code> to enable detection)
+        </span>
+      </div>
+
+      <div class="actions">
+        <span class="note" id="modeHint">
+          No-reference mode measures Streak Energy Reduction (%), Temporal Flicker, Sharpness, and FPS.
+        </span>
+        <button class="btn" id="runBtn" disabled>Derain &amp; Evaluate Video</button>
+      </div>
+
+      <div class="error-box" id="errorBox"></div>
+    </section>
+
+    <section class="card progress-wrap" id="progressCard">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <strong>Processing video...</strong>
+        <span id="progressPct" style="color:var(--accent); font-weight:700;">0%</span>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" id="progressFill"></div></div>
+      <div class="progress-meta">
+        <span id="progressFrames">Frame 0 / 0</span>
+        <span id="progressFps">0.0 FPS</span>
+        <span id="progressEta">ETA: --</span>
+      </div>
+    </section>
+
+    <section class="results" id="resultsSection">
+      <div class="card">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;">
+          <h2 style="margin:0; font-size:1.2rem;">Video Comparison</h2>
+          <div style="display:flex; flex-wrap:wrap; gap:10px;">
+            <button class="btn btn-secondary" id="syncPlayBtn">▶ Play / Pause Both</button>
+            <a class="btn" id="downloadVideoBtn" href="#" download="derained.mp4">⬇ Download Derained Video</a>
+            <a class="btn btn-secondary" id="downloadAnnotatedBtn" href="#" download="annotated.mp4" style="display:none;">⬇ Annotated Video</a>
+            <a class="btn btn-secondary" id="downloadCsvBtn" href="#" download="metrics.csv">⬇ Metrics CSV</a>
+          </div>
+        </div>
+
+        <div class="grid-2" id="videoGrid">
+          <div class="video-box">
+            <h3><span>Original Rainy Input</span></h3>
+            <video id="inputVideoPlayer" controls playsinline></video>
+            <img id="inputMjpeg" style="display:none; width:100%; border-radius:8px; max-height:380px; background:#000; object-fit:contain;" alt="Original Rainy Input" />
+          </div>
+          <div class="video-box">
+            <h3><span>Derained Output</span><span id="codecBadge" style="font-size:0.75rem;"></span></h3>
+            <video id="derainedVideoPlayer" controls playsinline></video>
+            <img id="derainedMjpeg" style="display:none; width:100%; border-radius:8px; max-height:380px; background:#000; object-fit:contain;" alt="Derained Output" />
+          </div>
+          <div class="video-box" id="annotatedVideoBox" style="display:none;">
+            <h3><span>Derained + Object Detection</span><span style="font-size:0.75rem;">YOLOv8n</span></h3>
+            <video id="annotatedVideoPlayer" controls playsinline></video>
+            <img id="annotatedMjpeg" style="display:none; width:100%; border-radius:8px; max-height:380px; background:#000; object-fit:contain;" alt="Derained + Object Detection" />
+          </div>
+        </div>
+        <div class="note" id="playbackNote" style="display:none;">
+          Showing live MJPEG preview (browser-native H.264 <code>ffmpeg</code> was unavailable). Use the Download buttons above for the full <code>.mp4</code> files.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin:0 0 6px; font-size:1.2rem;">Evaluation Metrics</h2>
+        <p class="note" id="metricsSubtitle" style="margin-top:0;"></p>
+        <div class="metrics-grid" id="metricsGrid"></div>
+
+        <div class="chart-wrap">
+          <h3 id="chartTitle">Per-Frame Performance</h3>
+          <svg class="chart" id="metricsChart" viewBox="0 0 800 180" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const rainyZone = document.getElementById("rainyZone");
+    const rainyInput = document.getElementById("rainyInput");
+    const rainyBadge = document.getElementById("rainyBadge");
+    const cleanZone = document.getElementById("cleanZone");
+    const cleanInput = document.getElementById("cleanInput");
+    const cleanBadge = document.getElementById("cleanBadge");
+    const modeSelect = document.getElementById("modeSelect");
+    const rainDensityWrap = document.getElementById("rainDensityWrap");
+    const modeHint = document.getElementById("modeHint");
+    const runBtn = document.getElementById("runBtn");
+    const errorBox = document.getElementById("errorBox");
+    const progressCard = document.getElementById("progressCard");
+    const progressFill = document.getElementById("progressFill");
+    const progressPct = document.getElementById("progressPct");
+    const progressFrames = document.getElementById("progressFrames");
+    const progressFps = document.getElementById("progressFps");
+    const progressEta = document.getElementById("progressEta");
+    const resultsSection = document.getElementById("resultsSection");
+    const inputVideoPlayer = document.getElementById("inputVideoPlayer");
+    const derainedVideoPlayer = document.getElementById("derainedVideoPlayer");
+    const annotatedVideoBox = document.getElementById("annotatedVideoBox");
+    const annotatedVideoPlayer = document.getElementById("annotatedVideoPlayer");
+    const syncPlayBtn = document.getElementById("syncPlayBtn");
+    const downloadVideoBtn = document.getElementById("downloadVideoBtn");
+    const downloadAnnotatedBtn = document.getElementById("downloadAnnotatedBtn");
+    const downloadCsvBtn = document.getElementById("downloadCsvBtn");
+    const playbackNote = document.getElementById("playbackNote");
+    const metricsGrid = document.getElementById("metricsGrid");
+    const metricsSubtitle = document.getElementById("metricsSubtitle");
+    const metricsChart = document.getElementById("metricsChart");
+    const chartTitle = document.getElementById("chartTitle");
+
+    let rainyFile = null;
+    let cleanFile = null;
+    let pollTimer = null;
+
+    function formatBytes(bytes) {
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+
+    function wireDropzone(zone, input, onFileSelect) {
+      zone.addEventListener("click", (e) => {
+        if (e.target.classList.contains("clear-btn")) return;
+        input.click();
+      });
+      zone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        zone.classList.add("dragover");
+      });
+      zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+      zone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        zone.classList.remove("dragover");
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          onFileSelect(e.dataTransfer.files[0]);
+        }
+      });
+      input.addEventListener("change", () => {
+        if (input.files && input.files.length > 0) {
+          onFileSelect(input.files[0]);
+        }
+      });
+    }
+
+    function renderFileBadge(container, zone, file, onClear) {
+      if (!file) {
+        container.innerHTML = "";
+        zone.classList.remove("has-file");
+        return;
+      }
+      zone.classList.add("has-file");
+      container.innerHTML = `
+        <div class="file-badge">
+          <span>${file.name} (${formatBytes(file.size)})</span>
+          <button type="button" class="clear-btn" title="Remove">✕</button>
+        </div>
+      `;
+      container.querySelector(".clear-btn").addEventListener("click", onClear);
+    }
+
+    function updateControlsState() {
+      const m = modeSelect.value;
+      rainDensityWrap.style.display = m === "synthetic" ? "flex" : "none";
+      document.getElementById("rainyTitle").textContent =
+        m === "synthetic" ? "Drag & drop clean video (to add synthetic rain)" : "Drag & drop rainy video here";
+
+      if (m === "synthetic") {
+        modeHint.textContent = "Synthetic mode adds simulated rain to your clean video and reports PSNR, SSIM, and Gain.";
+      } else if (m === "paired" || (m === "auto" && cleanFile)) {
+        modeHint.textContent = "Paired mode compares derained output against your clean ground-truth video for PSNR & SSIM.";
+      } else {
+        modeHint.textContent = "No-reference mode measures Streak Energy Reduction (%), Temporal Flicker, Sharpness, and FPS.";
+      }
+
+      const needsClean = m === "paired";
+      runBtn.disabled = !rainyFile || (needsClean && !cleanFile);
+    }
+
+    wireDropzone(rainyZone, rainyInput, (f) => {
+      rainyFile = f;
+      renderFileBadge(rainyBadge, rainyZone, f, () => {
+        rainyFile = null;
+        rainyInput.value = "";
+        renderFileBadge(rainyBadge, rainyZone, null);
+        updateControlsState();
+      });
+      updateControlsState();
+    });
+
+    wireDropzone(cleanZone, cleanInput, (f) => {
+      cleanFile = f;
+      renderFileBadge(cleanBadge, cleanZone, f, () => {
+        cleanFile = null;
+        cleanInput.value = "";
+        renderFileBadge(cleanBadge, cleanZone, null);
+        updateControlsState();
+      });
+      updateControlsState();
+    });
+
+    modeSelect.addEventListener("change", updateControlsState);
+
+    async function checkHealth() {
+      const statusEl = document.getElementById("serverStatus");
+      try {
+        const res = await fetch("/api/health");
+        const data = await res.json();
+        statusEl.innerHTML = `<span class="dot"></span><span>Backend Ready${data.ffmpeg ? " • ffmpeg H.264" : ""}</span>`;
+        if (data.models && data.models.length > 0) {
+          document.getElementById("detectCheck").disabled = false;
+          document.getElementById("detectCheck").checked = true;
+          document.getElementById("noModelHint").style.display = "none";
+          const ms = document.getElementById("modelSelect");
+          ms.style.display = "inline-block";
+          ms.innerHTML = data.models.map(m => `<option value="${m}">${m}</option>`).join("");
+        } else {
+          document.getElementById("detectCheck").checked = false;
+          document.getElementById("detectCheck").disabled = true;
+          document.getElementById("noModelHint").style.display = "inline";
+        }
+      } catch {
+        statusEl.innerHTML = `<span class="dot" style="background:var(--danger)"></span><span>Backend Offline</span>`;
+      }
+    }
+    checkHealth();
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.classList.add("active");
+    }
+    function clearError() {
+      errorBox.textContent = "";
+      errorBox.classList.remove("active");
+    }
+
+    runBtn.addEventListener("click", async () => {
+      clearError();
+      if (!rainyFile) return;
+
+      runBtn.disabled = true;
+      resultsSection.classList.remove("active");
+      progressCard.classList.add("active");
+      progressFill.style.width = "0%";
+      progressPct.textContent = "0%";
+      progressFrames.textContent = "Uploading...";
+      progressFps.textContent = "";
+      progressEta.textContent = "";
+
+      const form = new FormData();
+      form.append("rainy_video", rainyFile);
+      if (cleanFile) form.append("clean_video", cleanFile);
+      form.append("mode", modeSelect.value);
+      form.append("quality", document.getElementById("qualitySelect").value);
+      form.append("derain_width", document.getElementById("widthSelect").value);
+      form.append("max_frames", document.getElementById("maxFramesInput").value || "0");
+      form.append("rain_density", document.getElementById("rainDensityInput").value || "0.002");
+      form.append("no_flow", document.getElementById("noFlowCheck").checked);
+      form.append("detect_objects", document.getElementById("detectCheck").checked);
+      const ms = document.getElementById("modelSelect");
+      if (ms.value) form.append("model_name", ms.value);
+
+      try {
+        const res = await fetch("/api/process", { method: "POST", body: form });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to start processing.");
+        pollJob(data.job_id);
+      } catch (err) {
+        progressCard.classList.remove("active");
+        showError(err.message);
+        updateControlsState();
+      }
+    });
+
+    function pollJob(jobId) {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/jobs/${jobId}`);
+          const job = await res.json();
+          const p = job.progress || {};
+          progressFill.style.width = `${p.percent || 0}%`;
+          progressPct.textContent = `${p.percent || 0}%`;
+          progressFrames.textContent = `Frame ${p.processed_frames || 0}${p.total_frames ? " / " + p.total_frames : ""}`;
+          progressFps.textContent = `${(p.current_fps || 0).toFixed(1)} FPS`;
+          progressEta.textContent = p.eta_seconds != null ? `ETA: ${p.eta_seconds.toFixed(1)}s` : "ETA: --";
+
+          if (job.status === "completed") {
+            clearInterval(pollTimer);
+            progressCard.classList.remove("active");
+            renderResults(job);
+            updateControlsState();
+          } else if (job.status === "error") {
+            clearInterval(pollTimer);
+            progressCard.classList.remove("active");
+            showError(job.error || "Processing failed.");
+            updateControlsState();
+          }
+        } catch (err) {
+          clearInterval(pollTimer);
+          progressCard.classList.remove("active");
+          showError("Lost connection to server while polling job.");
+          updateControlsState();
+        }
+      }, 600);
+    }
+
+    function metricCard(label, value, sub) {
+      return `
+        <div class="metric-card">
+          <div class="m-label">${label}</div>
+          <div class="m-val">${value}</div>
+          <div class="m-sub">${sub}</div>
+        </div>
+      `;
+    }
+
+    function renderChart(rows, mode) {
+      if (!rows || rows.length < 2) {
+        metricsChart.innerHTML = "";
+        return;
+      }
+      const hasPsnr = mode === "paired" || mode === "synthetic";
+      const key = hasPsnr ? "psnr_gain" : "streak_energy_reduction_pct";
+      chartTitle.textContent = hasPsnr
+        ? "Per-Frame PSNR Gain (dB) over Rainy Input"
+        : "Per-Frame Streak Energy Reduction (%)";
+
+      const vals = rows.map(r => Number(r[key] ?? 0));
+      const minV = Math.min(...vals, 0);
+      const maxV = Math.max(...vals, 1);
+      const span = Math.max(maxV - minV, 1e-3);
+      const W = 800, H = 180, pad = 16;
+
+      const pts = vals.map((v, i) => {
+        const x = pad + (i / (vals.length - 1)) * (W - 2 * pad);
+        const y = H - pad - ((v - minV) / span) * (H - 2 * pad);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(" ");
+
+      const zeroY = H - pad - ((0 - minV) / span) * (H - 2 * pad);
+      metricsChart.innerHTML = `
+        <line x1="${pad}" y1="${zeroY.toFixed(1)}" x2="${W - pad}" y2="${zeroY.toFixed(1)}" stroke="#334155" stroke-dasharray="4 4" />
+        <polyline fill="none" stroke="#2dd4bf" stroke-width="2.5" points="${pts}" />
+        <text x="${pad}" y="14" fill="#93a3c7" font-size="11">max: ${maxV.toFixed(2)}</text>
+        <text x="${pad}" y="${H - 4}" fill="#93a3c7" font-size="11">min: ${minV.toFixed(2)} • ${rows.length} frames</text>
+      `;
+    }
+
+    function setPlayerMedia(videoEl, mjpegEl, videoUrl, mjpegUrl, useH264) {
+      if (useH264) {
+        mjpegEl.style.display = "none";
+        mjpegEl.removeAttribute("src");
+        videoEl.style.display = "block";
+        videoEl.src = videoUrl;
+        videoEl.onerror = () => {
+          videoEl.style.display = "none";
+          mjpegEl.src = mjpegUrl;
+          mjpegEl.style.display = "block";
+        };
+      } else {
+        videoEl.style.display = "none";
+        videoEl.removeAttribute("src");
+        mjpegEl.src = mjpegUrl;
+        mjpegEl.style.display = "block";
+      }
+    }
+
+    function renderResults(job) {
+      resultsSection.classList.add("active");
+      const out = job.outputs;
+      const s = job.summary || {};
+
+      const inputMjpeg = document.getElementById("inputMjpeg");
+      const derainedMjpeg = document.getElementById("derainedMjpeg");
+      const annotatedMjpeg = document.getElementById("annotatedMjpeg");
+
+      setPlayerMedia(inputVideoPlayer, inputMjpeg, out.input_video, out.mjpeg_input, out.browser_transcoded);
+      setPlayerMedia(derainedVideoPlayer, derainedMjpeg, out.derained_video, out.mjpeg_derained, out.browser_transcoded);
+      downloadVideoBtn.href = out.derained_video;
+      downloadCsvBtn.href = out.metrics_csv;
+
+      if (out.annotated_video) {
+        setPlayerMedia(annotatedVideoPlayer, annotatedMjpeg, out.annotated_video, out.mjpeg_annotated, out.browser_transcoded);
+        annotatedVideoBox.style.display = "block";
+        downloadAnnotatedBtn.href = out.annotated_video;
+        downloadAnnotatedBtn.style.display = "inline-flex";
+      } else {
+        annotatedVideoPlayer.removeAttribute("src");
+        annotatedMjpeg.removeAttribute("src");
+        annotatedVideoBox.style.display = "none";
+        downloadAnnotatedBtn.style.display = "none";
+      }
+
+      playbackNote.style.display = out.browser_transcoded ? "none" : "block";
+      document.getElementById("codecBadge").textContent = out.browser_transcoded ? "H.264" : "MJPEG Preview";
+      syncPlayBtn.style.display = out.browser_transcoded ? "inline-flex" : "none";
+
+      const cards = [];
+      if (s.fps) {
+        cards.push(metricCard("Processing Speed", `${s.fps.mean.toFixed(1)} FPS`,
+          `${s.processing_time_ms.mean.toFixed(1)} ms/frame (min ${s.fps.min.toFixed(1)}, max ${s.fps.max.toFixed(1)})`));
+      }
+      if (s.psnr_derained_vs_clean) {
+        const g = s.psnr_gain.mean;
+        cards.push(metricCard(
+          "PSNR (Derained vs Clean)",
+          `${s.psnr_derained_vs_clean.mean.toFixed(2)} dB`,
+          `Rainy: ${s.psnr_rainy_vs_clean.mean.toFixed(2)} dB • <span class="gain-pos">${g >= 0 ? "+" : ""}${g.toFixed(2)} dB gain</span>`
+        ));
+      }
+      if (s.ssim_derained_vs_clean) {
+        const g = s.ssim_gain.mean;
+        cards.push(metricCard(
+          "SSIM (Derained vs Clean)",
+          `${s.ssim_derained_vs_clean.mean.toFixed(4)}`,
+          `Rainy: ${s.ssim_rainy_vs_clean.mean.toFixed(4)} • <span class="gain-pos">${g >= 0 ? "+" : ""}${g.toFixed(4)} gain</span>`
+        ));
+      }
+      if (s.streak_energy_reduction_pct) {
+        cards.push(metricCard(
+          "Streak Energy Reduction",
+          `${s.streak_energy_reduction_pct.mean.toFixed(1)}%`,
+          `${s.streak_energy_rainy.mean.toFixed(4)} → ${s.streak_energy_derained.mean.toFixed(4)}`
+        ));
+      }
+      if (s.flicker_derained) {
+        cards.push(metricCard(
+          "Temporal Flicker",
+          `${s.flicker_derained.mean.toFixed(2)}`,
+          `Rainy input: ${s.flicker_rainy.mean.toFixed(2)} (lower = smoother)`
+        ));
+      }
+      if (s.sharpness_derained) {
+        cards.push(metricCard(
+          "Edge Sharpness (Laplacian)",
+          `${s.sharpness_derained.mean.toFixed(0)}`,
+          `Rainy input: ${s.sharpness_rainy.mean.toFixed(0)}`
+        ));
+      }
+      if (s.detections_count) {
+        const clsEntries = Object.entries(s.detected_classes || {})
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 4)
+          .map(([k, v]) => `${k} (${v})`)
+          .join(", ");
+        cards.push(metricCard(
+          "Object Detections",
+          `${s.detections_count.mean.toFixed(1)} / frame`,
+          clsEntries || "No objects detected"
+        ));
+      }
+
+      metricsSubtitle.textContent = `Mode: ${job.mode} • Quality preset: ${job.quality} • Evaluated frames: ${job.progress.processed_frames}`;
+      metricsGrid.innerHTML = cards.join("");
+      renderChart(job.per_frame, job.mode);
+      resultsSection.scrollIntoView({ behavior: "smooth" });
+    }
+
+    syncPlayBtn.addEventListener("click", () => {
+      const players = [inputVideoPlayer, derainedVideoPlayer];
+      if (annotatedVideoBox.style.display !== "none") {
+        players.push(annotatedVideoPlayer);
+      }
+      if (derainedVideoPlayer.paused) {
+        const t = derainedVideoPlayer.currentTime;
+        for (const p of players) {
+          p.currentTime = t;
+          p.play().catch(() => {});
+        }
+      } else {
+        for (const p of players) p.pause();
+      }
+    });
+  </script>
+</body>
+</html>
